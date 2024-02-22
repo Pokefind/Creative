@@ -24,7 +24,10 @@
 package team.unnamed.creative.serialize.minecraft;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.MalformedJsonException;
 import net.kyori.adventure.key.Key;
 import org.intellij.lang.annotations.Subst;
 import org.jetbrains.annotations.NotNull;
@@ -100,7 +103,11 @@ final class MinecraftResourcePackReaderImpl implements MinecraftResourcePackRead
                 switch (tokens.poll()) {
                     case PACK_METADATA_FILE: {
                         // found pack.mcmeta file, deserialize and add
-                        Metadata metadata = MetadataSerializer.INSTANCE.readFromTree(parseJson(reader.stream()));
+                        JsonElement element = parseJson(reader.stream());
+                        if (element == null) {
+                            continue;
+                        }
+                        Metadata metadata = MetadataSerializer.INSTANCE.readFromTree(element);
                         resourcePack.metadata(metadata);
                         continue;
                     }
@@ -190,8 +197,12 @@ final class MinecraftResourcePackReaderImpl implements MinecraftResourcePackRead
                 // (remember: last tokens are always files)
                 if (categoryName.equals(SOUNDS_FILE)) {
                     // found a sound registry!
+                    JsonElement element = parseJson(reader.stream());
+                    if (element == null) {
+                        continue;
+                    }
                     container.soundRegistry(SoundRegistrySerializer.INSTANCE.readFromTree(
-                            parseJson(reader.stream()),
+                            element,
                             namespace
                     ));
                     continue;
@@ -206,7 +217,7 @@ final class MinecraftResourcePackReaderImpl implements MinecraftResourcePackRead
             // "lang", "font", etc. next we can compute the relative
             // path inside the category
             String categoryPath = path(tokens);
-
+            
             if (categoryName.equals(TEXTURES_FOLDER)) {
                 String keyOfMetadata = withoutExtension(categoryPath, METADATA_EXTENSION);
                 if (keyOfMetadata != null) {
@@ -331,5 +342,30 @@ final class MinecraftResourcePackReaderImpl implements MinecraftResourcePackRead
         public @NotNull MinecraftResourcePackReader build() {
             return new MinecraftResourcePackReaderImpl(lenient);
         }
+    }
+
+    private static JsonReader reader(InputStream input) {
+        JsonReader reader = null;
+        try {
+            reader = new JsonReader(new InputStreamReader(input, StandardCharsets.UTF_8));
+        }
+        catch (JsonSyntaxException e) {
+            e.printStackTrace();
+        }
+        return reader;
+    }
+
+    private static JsonElement parse(String file, InputStream input) {
+        JsonElement element = null;
+        try {
+            JsonReader reader = reader(input);
+            if (reader == null)
+                return element;
+            element = PARSER.parse(reader);
+        } catch (Exception e) {
+            System.out.println("Failed file: " + file);
+            e.printStackTrace();
+        }
+        return element;
     }
 }

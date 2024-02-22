@@ -25,6 +25,12 @@ package team.unnamed.creative.serialize.minecraft;
 
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.key.Keyed;
+import team.unnamed.creative.blockstate.BlockState;
+import team.unnamed.creative.font.Font;
+import team.unnamed.creative.lang.Language;
+import team.unnamed.creative.model.Model;
+import team.unnamed.creative.model.ModelTexture;
+import team.unnamed.creative.sound.Sound;
 import team.unnamed.creative.sound.SoundRegistry;
 import team.unnamed.creative.texture.Texture;
 
@@ -33,7 +39,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.StringJoiner;
 
-final class MinecraftResourcePackStructure {
+public final class MinecraftResourcePackStructure {
 
     // file extensions
     public static final String TEXTURE_EXTENSION = ".png";
@@ -74,6 +80,12 @@ final class MinecraftResourcePackStructure {
         Key key = texture.key();
         // assets/<namespace>/textures/<path>
         return path(ASSETS_FOLDER, key.namespace(), TEXTURES_FOLDER, key.value());
+    }
+
+    public static String pathOf(ModelTexture texture) {
+        Key key = texture.key();
+        // assets/<namespace>/textures/<path>
+        return path(ASSETS_FOLDER, key.namespace(), TEXTURES_FOLDER, key.value() + TEXTURE_EXTENSION);
     }
 
     public static String pathOfMeta(Texture texture) {

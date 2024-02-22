@@ -34,6 +34,9 @@ import team.unnamed.creative.base.Axis3D;
 import team.unnamed.creative.base.CubeFace;
 import team.unnamed.creative.base.Vector2Float;
 import team.unnamed.creative.base.Vector3Float;
+import team.unnamed.creative.base.Vector4Float;
+import team.unnamed.creative.model.*;
+import team.unnamed.creative.util.Keys;
 import team.unnamed.creative.model.Element;
 import team.unnamed.creative.model.ElementFace;
 import team.unnamed.creative.model.ElementRotation;
@@ -57,6 +60,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.*;
 
 @ApiStatus.Internal
 public final class ModelSerializer implements JsonResourceSerializer<Model>, JsonResourceDeserializer<Model> {
@@ -181,6 +185,14 @@ public final class ModelSerializer implements JsonResourceSerializer<Model>, Jso
             }
         }
 
+        List<ItemGroup> groups = new ArrayList<>();
+        if (objectNode.has("groups")) {
+            for (JsonElement groupNode : objectNode.getAsJsonArray("groups")) {
+                if (groupNode.isJsonObject())
+                    groups.add(readItemGroup(groupNode));
+            }
+        }
+
         return Model.model()
                 .key(key)
                 .parent(parent)
@@ -190,6 +202,7 @@ public final class ModelSerializer implements JsonResourceSerializer<Model>, Jso
                 .textures(texture)
                 .guiLight(guiLight)
                 .overrides(overrides)
+                .groups(groups)
                 .build();
     }
 
@@ -398,6 +411,37 @@ public final class ModelSerializer implements JsonResourceSerializer<Model>, Jso
         return ItemOverride.of(key, predicates);
     }
 
+    private static ItemGroup readItemGroup(JsonElement node) {
+        JsonObject objectNode = node.getAsJsonObject();
+        System.out.println("Reading Item Group: " + objectNode);
+
+        String name = "";
+        if (objectNode.has("name")) {
+            name = objectNode.get("name").getAsString();
+            System.out.println("Item Group Name: " + name);
+        }
+
+        Vector3Float origin = Vector3Float.ZERO;
+        if (objectNode.has("origin")) {
+            origin = readVector3Float(objectNode.get("origin"));
+            System.out.println("Item Group Origin: " + origin);
+        }
+
+        int color = 0;
+        if (objectNode.has("color")) {
+            color = objectNode.get("color").getAsInt();
+            System.out.println("Item Group Color: " + color);
+        }
+
+        List<Integer> children = new ArrayList<>();
+        if (objectNode.has("children")) {
+            children = readIntegerArray(objectNode.get("children"));
+            System.out.println("Item Group Children: " + Arrays.toString(children.toArray()));
+        }
+
+        return ItemGroup.of(name, origin, color, children);
+    }
+
     private static void writeItemTransform(JsonWriter writer, ItemTransform transform) throws IOException {
         writer.beginObject();
         Vector3Float rotation = transform.rotation();
@@ -483,7 +527,6 @@ public final class ModelSerializer implements JsonResourceSerializer<Model>, Jso
     }
 
     private static ModelTextures readTextures(JsonElement node) {
-
         JsonObject objectNode = node.getAsJsonObject();
         ModelTexture particle = null;
         List<ModelTexture> layers = new ArrayList<>(objectNode.entrySet().size());
@@ -512,6 +555,68 @@ public final class ModelSerializer implements JsonResourceSerializer<Model>, Jso
                 .layers(layers)
                 .variables(variables)
                 .build();
+    }
+
+    private static void writeVector3Float(JsonWriter writer, Vector3Float vector) throws IOException {
+        writer.beginArray();
+        writer.value(vector.x());
+        writer.value(vector.y());
+        writer.value(vector.z());
+        writer.endArray();
+    }
+
+    private static void writeVector2Float(JsonWriter writer, Vector2Float vector) throws IOException {
+        writer.beginArray();
+        writer.value(vector.x());
+        writer.value(vector.y());
+        writer.endArray();
+    }
+
+    private static void writeVector4Float(JsonWriter writer, Vector4Float vector) throws IOException {
+        writer.beginArray();
+        writer.value(vector.x());
+        writer.value(vector.y());
+        writer.value(vector.x2());
+        writer.value(vector.y2());
+        writer.endArray();
+    }
+
+   private static Vector3Float readVector3Float(JsonElement element) {
+       JsonArray array = element.getAsJsonArray();
+       return new Vector3Float(
+               (float) array.get(0).getAsDouble(),
+               (float) array.get(1).getAsDouble(),
+               (float) array.get(2).getAsDouble()
+       );
+   }
+
+    private static Vector4Float readVector4Float(JsonElement element) {
+        JsonArray array = element.getAsJsonArray();
+        return new Vector4Float(
+                (float) array.get(0).getAsDouble(),
+                (float) array.get(1).getAsDouble(),
+                (float) array.get(2).getAsDouble(),
+                (float) array.get(3).getAsDouble()
+        );
+    }
+
+    private static List<Integer> readIntegerArray(JsonElement element) {
+        List<Integer> integerList = new ArrayList<>();
+        JsonArray array = element.getAsJsonArray();
+        for (int i = 0; i < array.size() - 1; i++) {
+            JsonElement arrayElement = array.get(i);
+            if (arrayElement.isJsonObject()) {
+                try {
+                    int value = arrayElement.getAsInt();
+                    integerList.add(value);
+                }
+                catch (UnsupportedOperationException e) {
+                    e.printStackTrace();
+                    System.out.println();
+                }
+            }
+        }
+        return integerList;
     }
 
 }
