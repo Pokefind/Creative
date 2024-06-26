@@ -217,7 +217,7 @@ final class MinecraftResourcePackReaderImpl implements MinecraftResourcePackRead
             // "lang", "font", etc. next we can compute the relative
             // path inside the category
             String categoryPath = path(tokens);
-            
+
             if (categoryName.equals(TEXTURES_FOLDER)) {
                 String keyOfMetadata = withoutExtension(categoryPath, METADATA_EXTENSION);
                 if (keyOfMetadata != null) {
@@ -274,8 +274,12 @@ final class MinecraftResourcePackReaderImpl implements MinecraftResourcePackRead
                         resource = ((BinaryResourceDeserializer<?>) deserializer)
                                 .deserializeBinary(reader.content().asWritable(), key);
                     } else if (deserializer instanceof JsonResourceDeserializer) {
-                        resource = ((JsonResourceDeserializer<?>) deserializer)
-                                .deserializeFromJson(parseJson(reader.stream()), key);
+                        try {
+                            resource = ((JsonResourceDeserializer<?>) deserializer)
+                                    .deserializeFromJson(parseJson(reader.stream()), key);
+                        } catch (JsonSyntaxException | MalformedJsonException e) {
+                            throw new IOException("Failed to parse JSON at: '" + path + "'", e);
+                        }
                     } else {
                         resource = deserializer.deserialize(reader.stream(), key);
                     }
@@ -342,30 +346,5 @@ final class MinecraftResourcePackReaderImpl implements MinecraftResourcePackRead
         public @NotNull MinecraftResourcePackReader build() {
             return new MinecraftResourcePackReaderImpl(lenient);
         }
-    }
-
-    private static JsonReader reader(InputStream input) {
-        JsonReader reader = null;
-        try {
-            reader = new JsonReader(new InputStreamReader(input, StandardCharsets.UTF_8));
-        }
-        catch (JsonSyntaxException e) {
-            e.printStackTrace();
-        }
-        return reader;
-    }
-
-    private static JsonElement parse(String file, InputStream input) {
-        JsonElement element = null;
-        try {
-            JsonReader reader = reader(input);
-            if (reader == null)
-                return element;
-            element = PARSER.parse(reader);
-        } catch (Exception e) {
-            System.out.println("Failed file: " + file);
-            e.printStackTrace();
-        }
-        return element;
     }
 }

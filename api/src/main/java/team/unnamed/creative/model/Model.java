@@ -187,8 +187,6 @@ public interface Model extends ResourcePackPart, Keyed, Examinable {
         resourceContainer.model(this);
     }
 
-    public List<ItemGroup> groups() { return  groups; }
-
     /**
      * Enum of possible "gui_light" property
      * values

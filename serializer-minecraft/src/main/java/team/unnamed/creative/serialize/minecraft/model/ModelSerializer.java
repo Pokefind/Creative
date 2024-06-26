@@ -185,14 +185,6 @@ public final class ModelSerializer implements JsonResourceSerializer<Model>, Jso
             }
         }
 
-        List<ItemGroup> groups = new ArrayList<>();
-        if (objectNode.has("groups")) {
-            for (JsonElement groupNode : objectNode.getAsJsonArray("groups")) {
-                if (groupNode.isJsonObject())
-                    groups.add(readItemGroup(groupNode));
-            }
-        }
-
         return Model.model()
                 .key(key)
                 .parent(parent)
@@ -202,7 +194,6 @@ public final class ModelSerializer implements JsonResourceSerializer<Model>, Jso
                 .textures(texture)
                 .guiLight(guiLight)
                 .overrides(overrides)
-                .groups(groups)
                 .build();
     }
 
